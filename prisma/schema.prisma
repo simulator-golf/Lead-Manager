@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Upload {
+  id        String   @id @default(cuid())
+  filename  String
+  rowCount  Int
+  createdAt DateTime @default(now())
+
+  leads Lead[]
+}
+
+model Lead {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  email     String?
+  company   String?
+  revenue   Float    @default(0)
+  createdAt DateTime @default(now())
+
+  uploadId String?
+  upload   Upload?  @relation(fields: [uploadId], references: [id])
+
+  groupMembers GroupMember[]
+  callLogs     CallLog[]
+
+  @@index([phone])
+  @@index([email])
+}
+
+model Promo {
+  id        String   @id @default(cuid())
+  name      String
+  notes     String?
+  createdAt DateTime @default(now())
+
+  batches      Batch[]
+  callLogs     CallLog[]
+  listRequests ListRequest[]
+}
+
+// A generated batch of groups (either a plain "all leads" split, or a promo-targeted split)
+model Batch {
+  id        String   @id @default(cuid())
+  label     String
+  promoId   String?
+  promo     Promo?   @relation(fields: [promoId], references: [id])
+  createdAt DateTime @default(now())
+
+  groups Group[]
+}
+
+model Group {
+  id            String   @id @default(cuid())
+  groupNumber   Int
+  totalRevenue  Float    @default(0)
+  createdAt     DateTime @default(now())
+
+  batchId String
+  batch   Batch  @relation(fields: [batchId], references: [id])
+
+  members GroupMember[]
+
+  @@index([batchId])
+}
+
+model GroupMember {
+  id      String @id @default(cuid())
+  groupId String
+  group   Group  @relation(fields: [groupId], references: [id])
+  leadId  String
+  lead    Lead   @relation(fields: [leadId], references: [id])
+  revenue Float  @default(0)
+
+  @@index([groupId])
+  @@index([leadId])
+}
+
+// Records that a lead was called for a specific promo (uploaded from call-outcome CSVs)
+model CallLog {
+  id        String   @id @default(cuid())
+  promoId   String
+  promo     Promo    @relation(fields: [promoId], references: [id])
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id])
+  outcome   String?
+  calledAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@index([promoId])
+  @@index([leadId])
+}
+
+model ListRequest {
+  id             String   @id @default(cuid())
+  requesterName  String
+  requesterEmail String?
+  notes          String?
+  promoId        String?
+  promo          Promo?   @relation(fields: [promoId], references: [id])
+  status         String   @default("pending") // pending | fulfilled
+  createdAt      DateTime @default(now())
+  fulfilledAt    DateTime?
+}
