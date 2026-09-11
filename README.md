@@ -18,6 +18,9 @@ A cold-calling lead management tool:
 
 ## Setup
 
+You'll need a Postgres database (a free one from [Neon](https://neon.tech) or
+[Supabase](https://supabase.com) works fine, or run one locally).
+
 ```bash
 npm install
 cp .env.example .env   # then edit the values below
@@ -31,7 +34,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 | Variable | Required | Description |
 | --- | --- | --- |
-| `DATABASE_URL` | Yes | SQLite file, defaults to `file:./dev.db` (stored in `prisma/`). |
+| `DATABASE_URL` | Yes | Postgres connection string, e.g. `postgresql://user:password@host:5432/dbname`. |
 | `ADMIN_PASSWORD` | Yes | The one password used to log in. Change it from the default. |
 | `SESSION_SECRET` | Yes | Long random string used to sign the login session cookie. |
 | `RESEND_API_KEY` | No | API key from [resend.com](https://resend.com) for sending the "new list request" email. If unset, notifications are just logged to the server console instead of emailed — useful for local dev. |
@@ -61,13 +64,12 @@ members except the last, which gets whatever's left over (e.g. 130 leads → gro
 
 ## Deployment
 
-This app needs a writable filesystem for its SQLite database, so a serverless platform
-like plain Vercel won't persist data between requests. It deploys cleanly to any host
-with a persistent disk — e.g. a small VPS, Railway, Fly.io, or a Docker container with a
-mounted volume for the `prisma/` directory. Run `npx prisma migrate deploy` once against
-the production `DATABASE_URL` before starting the app.
+Deploys cleanly to Vercel (or any Node host). The `build` script runs
+`prisma migrate deploy` automatically before `next build`, so migrations apply on every
+deploy — just set `DATABASE_URL` (and the other env vars above) in the platform's project
+settings. A free Postgres database from Neon or Supabase is enough for this app's scale.
 
 ## Tech stack
 
-Next.js (App Router) + TypeScript + Tailwind CSS, Prisma + SQLite, [Resend](https://resend.com)
+Next.js (App Router) + TypeScript + Tailwind CSS, Prisma + Postgres, [Resend](https://resend.com)
 for email.

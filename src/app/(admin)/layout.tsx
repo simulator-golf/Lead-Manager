@@ -2,6 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import LogoutButton from "./LogoutButton";
 
+export const dynamic = "force-dynamic";
+
 const NAV_ITEMS = [
   { href: "/", label: "Dashboard" },
   { href: "/upload", label: "Upload Leads" },

@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import RequestForm from "./RequestForm";
 
+export const dynamic = "force-dynamic";
+
 export default async function RequestPage() {
   const promos = await prisma.promo.findMany({
     orderBy: { createdAt: "desc" },
