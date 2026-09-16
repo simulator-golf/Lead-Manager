@@ -4,7 +4,7 @@ import { jwtVerify } from "jose";
 
 const COOKIE_NAME = "session";
 
-const PUBLIC_PATHS = ["/login", "/request"];
+const PUBLIC_PATHS = ["/login", "/request", "/trugolf-tutorial"];
 const PUBLIC_API_PREFIXES = ["/api/auth/login", "/api/list-requests"];
 
 async function isValidSession(token: string | undefined): Promise<boolean> {
@@ -45,5 +45,7 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|gif|webp|ico)$).*)",
+  ],
 };
