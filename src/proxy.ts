@@ -5,7 +5,7 @@ import { jwtVerify } from "jose";
 const COOKIE_NAME = "session";
 
 const PUBLIC_PATHS = ["/login", "/request"];
-const PUBLIC_API_PREFIXES = ["/api/auth/login", "/api/list-requests"];
+const PUBLIC_API_PREFIXES = ["/api/auth/login", "/api/list-requests", "/api/export/"];
 
 async function isValidSession(token: string | undefined): Promise<boolean> {
   if (!token) return false;

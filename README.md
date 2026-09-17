@@ -14,7 +14,11 @@ A cold-calling lead management tool:
 - **List requests** — a public, no-login page at `/request` where people can request a
   new list. You get an email notification each time (and a queue at `/requests` to track
   and mark them fulfilled).
-- Everything except `/request` and `/login` requires the single admin password.
+- **Live Google Sheets feed** — a continuously-updating view of every lead's called
+  status per promo, pullable straight into a Sheet with `IMPORTDATA` (no export clicks,
+  no Google account setup). See "Google Sheets feed" below.
+- Everything except `/request`, `/login`, and `/api/export/*` requires the single admin
+  password.
 
 ## Setup
 
@@ -40,6 +44,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | `RESEND_API_KEY` | No | API key from [resend.com](https://resend.com) for sending the "new list request" email. If unset, notifications are just logged to the server console instead of emailed — useful for local dev. |
 | `NOTIFY_EMAIL` | Yes | Where list-request notifications are sent. |
 | `FROM_EMAIL` | No | The "from" address for notification emails. Must be a verified sender/domain in Resend, or use `onboarding@resend.dev` for testing. |
+| `EXPORT_TOKEN` | Yes (if using the Sheets feed) | Secret required as `?token=` on `/api/export/*` feeds, since Google Sheets can't send a login cookie. Anyone with this value and your app's URL can read the exported data — keep it private, don't share the full feed URL. |
 
 ## CSV formats
 
@@ -61,6 +66,23 @@ one at a time to whichever group currently has the lowest running total — skip
 group that has already reached its target size. Every group ends up at exactly 50
 members except the last, which gets whatever's left over (e.g. 130 leads → groups of 50,
 50, and 30), while keeping each group's total revenue close to the others.
+
+## Google Sheets feed
+
+`GET /api/export/call-status?token=YOUR_EXPORT_TOKEN` returns a CSV with one row per
+lead (name, phone, email, company, revenue) and one column per promo showing the date
+that lead was marked called for it (blank if not yet called). It requires no session —
+just the `EXPORT_TOKEN` value as a query param — so Google Sheets can pull it directly.
+
+In a Google Sheet, put this in cell A1:
+
+```
+=IMPORTDATA("https://your-app.vercel.app/api/export/call-status?token=YOUR_EXPORT_TOKEN")
+```
+
+Google refreshes `IMPORTDATA` automatically every so often (and whenever the sheet is
+opened) — it's not instant, but it keeps the Sheet current without anyone touching a
+CSV. Treat that formula as sensitive: whoever can see it can see the whole feed.
 
 ## Deployment
 
