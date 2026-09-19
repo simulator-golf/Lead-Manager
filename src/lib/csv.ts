@@ -10,6 +10,8 @@ export interface ParsedLeadRow {
 }
 
 const NAME_KEYS = ["name", "full name", "fullname", "contact", "contact name", "lead name"];
+const FIRST_NAME_KEYS = ["first name", "firstname", "first"];
+const LAST_NAME_KEYS = ["last name", "lastname", "last", "surname"];
 const PHONE_KEYS = ["phone", "phone number", "cell", "mobile", "telephone"];
 const EMAIL_KEYS = ["email", "e-mail", "email address"];
 const COMPANY_KEYS = ["company", "business", "organization", "org"];
@@ -23,6 +25,11 @@ const REVENUE_KEYS = [
   "money spent",
   "value",
   "ltv",
+  "lifetime spend",
+  "lifetime value",
+  "total lifetime spend",
+  "customer lifetime value",
+  "clv",
 ];
 
 function normalizeHeader(h: string) {
@@ -68,15 +75,19 @@ export function parseLeadsCsv(fileContents: string): ParsedLeadRow[] {
 
   const firstRow = records[0];
   const nameKey = findKey(firstRow, NAME_KEYS);
-  if (!nameKey) {
+  const firstNameKey = findKey(firstRow, FIRST_NAME_KEYS);
+  const lastNameKey = findKey(firstRow, LAST_NAME_KEYS);
+  if (!nameKey && !firstNameKey && !lastNameKey) {
     throw new CsvValidationError(
-      `Could not find a "name" column. Found columns: ${Object.keys(firstRow).join(", ")}`,
+      `Could not find a "name" column (or "first name"/"last name" columns). Found columns: ${Object.keys(
+        firstRow,
+      ).join(", ")}`,
     );
   }
   const revenueKey = findKey(firstRow, REVENUE_KEYS);
   if (!revenueKey) {
     throw new CsvValidationError(
-      `Could not find a revenue/spend column (e.g. "revenue" or "spent"). Found columns: ${Object.keys(
+      `Could not find a revenue/spend column (e.g. "revenue", "spent", or "lifetime spend"). Found columns: ${Object.keys(
         firstRow,
       ).join(", ")}`,
     );
@@ -86,13 +97,28 @@ export function parseLeadsCsv(fileContents: string): ParsedLeadRow[] {
   const companyKey = findKey(firstRow, COMPANY_KEYS);
 
   return records
-    .map((row) => ({
-      name: (row[nameKey] ?? "").trim(),
-      phone: phoneKey ? (row[phoneKey] ?? "").trim() || null : null,
-      email: emailKey ? (row[emailKey] ?? "").trim().toLowerCase() || null : null,
-      company: companyKey ? (row[companyKey] ?? "").trim() || null : null,
-      revenue: parseRevenue(row[revenueKey]),
-    }))
+    .map((row) => {
+      const phone = phoneKey ? (row[phoneKey] ?? "").trim() || null : null;
+      const email = emailKey ? (row[emailKey] ?? "").trim().toLowerCase() || null : null;
+
+      let name = nameKey ? (row[nameKey] ?? "").trim() : "";
+      if (!name) {
+        const first = firstNameKey ? (row[firstNameKey] ?? "").trim() : "";
+        const last = lastNameKey ? (row[lastNameKey] ?? "").trim() : "";
+        name = `${first} ${last}`.trim();
+      }
+      // Some CRM exports leave the name blank for a handful of rows but still
+      // have a real contact on file — fall back rather than dropping the lead.
+      if (!name) name = email ?? phone ?? "";
+
+      return {
+        name,
+        phone,
+        email,
+        company: companyKey ? (row[companyKey] ?? "").trim() || null : null,
+        revenue: parseRevenue(row[revenueKey]),
+      };
+    })
     .filter((row) => row.name.length > 0);
 }
 

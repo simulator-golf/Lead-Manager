@@ -48,11 +48,13 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## CSV formats
 
-**Lead upload** (`/upload`) needs a `name` column and a revenue column (any of
-`revenue`, `spent`, `amount`, `total spent`, `value`, `ltv`, ...). `phone`, `email`, and
+**Lead upload** (`/upload`) needs a `name` column (or separate `first name` /
+`last name` columns — either works) and a revenue column (any of `revenue`, `spent`,
+`amount`, `total spent`, `lifetime spend`, `value`, `ltv`, ...). `phone`, `email`, and
 `company` columns are optional but recommended — `phone`/`email` are used to match call
-outcomes later. Column names are matched case-insensitively and don't need to be in any
-particular order.
+outcomes later, and also as a fallback name if a row has no name filled in at all.
+Column names are matched case-insensitively and don't need to be in any particular
+order; extra columns (like a CRM's internal ID) are ignored.
 
 **Call outcome upload** (on a promo's page) needs a `phone` and/or `email` column to
 match against existing leads (phone numbers are normalized to digits before matching, so
