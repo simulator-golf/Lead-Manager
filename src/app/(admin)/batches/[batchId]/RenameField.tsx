@@ -88,16 +88,15 @@ export default function RenameField({
   }
 
   return (
-    <button
-      type="button"
-      onClick={() => setEditing(true)}
-      className={`group inline-flex items-center gap-2 text-left ${textClassName}`}
-      title="Click to rename"
-    >
-      {value}
-      <span className="text-xs font-normal text-gray-400 opacity-0 group-hover:opacity-100">
-        rename
-      </span>
-    </button>
+    <div className="inline-flex items-center gap-2">
+      <span className={textClassName}>{value}</span>
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        className="rounded-md border border-gray-300 px-2 py-0.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
+      >
+        Rename
+      </button>
+    </div>
   );
 }
