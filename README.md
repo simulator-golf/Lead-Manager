@@ -11,6 +11,8 @@ A cold-calling lead management tool:
   email), so the next generated list automatically excludes them.
 - **CSV downloads** — every group (and whole lists) can be downloaded as a CSV, ready to
   import straight into Google Sheets.
+- **Rename lists and groups** — click a list's title or a group's name (on a list's page)
+  to rename it inline.
 - **List requests** — a public, no-login page at `/request` where people can request a
   new list. You get an email notification each time (and a queue at `/requests` to track
   and mark them fulfilled).

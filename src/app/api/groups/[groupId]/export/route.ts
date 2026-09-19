@@ -27,7 +27,8 @@ export async function GET(_req: Request, ctx: RouteContext<"/api/groups/[groupId
     })),
   );
 
-  const filename = `${group.batch.label.replace(/[^a-z0-9]+/gi, "-")}-group-${group.groupNumber}.csv`;
+  const groupLabel = group.name ?? `group-${group.groupNumber}`;
+  const filename = `${group.batch.label.replace(/[^a-z0-9]+/gi, "-")}-${groupLabel.replace(/[^a-z0-9]+/gi, "-")}.csv`;
 
   return new NextResponse(csv, {
     headers: {

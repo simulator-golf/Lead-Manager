@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import RenameField from "./RenameField";
 
 export default async function BatchDetailPage({
   params,
@@ -30,7 +31,13 @@ export default async function BatchDetailPage({
           &larr; All lists
         </Link>
         <div className="mt-1 flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-gray-900">{batch.label}</h1>
+          <RenameField
+            value={batch.label}
+            endpoint={`/api/batches/${batch.id}`}
+            field="label"
+            textClassName="text-2xl font-semibold text-gray-900"
+            inputClassName="rounded-md border border-gray-300 px-2 py-1 text-2xl font-semibold text-gray-900 focus:border-gray-500 focus:outline-none"
+          />
           <a
             href={`/api/batches/${batch.id}/export`}
             className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
@@ -56,7 +63,13 @@ export default async function BatchDetailPage({
         {batch.groups.map((group) => (
           <div key={group.id} className="rounded-lg border border-gray-200 bg-white p-4">
             <div className="mb-2 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-900">Group {group.groupNumber}</h2>
+              <RenameField
+                value={group.name ?? `Group ${group.groupNumber}`}
+                endpoint={`/api/groups/${group.id}`}
+                field="name"
+                textClassName="text-sm font-semibold text-gray-900"
+                inputClassName="rounded-md border border-gray-300 px-2 py-1 text-sm font-semibold text-gray-900 focus:border-gray-500 focus:outline-none"
+              />
               <a
                 href={`/api/groups/${group.id}/export`}
                 className="text-xs font-medium text-gray-600 underline hover:text-gray-900"

@@ -60,6 +60,7 @@ model Batch {
 model Group {
   id            String   @id @default(cuid())
   groupNumber   Int
+  name          String?
   totalRevenue  Float    @default(0)
   createdAt     DateTime @default(now())
 

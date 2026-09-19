@@ -21,7 +21,7 @@ export async function GET(_req: Request, ctx: RouteContext<"/api/batches/[batchI
 
   const rows = batch.groups.flatMap((g) =>
     g.members.map((m) => ({
-      group: g.groupNumber,
+      group: g.name ?? `Group ${g.groupNumber}`,
       name: m.lead.name,
       phone: m.lead.phone ?? "",
       email: m.lead.email ?? "",
