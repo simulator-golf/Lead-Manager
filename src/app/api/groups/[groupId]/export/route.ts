@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { leadsToCsv } from "@/lib/csv";
+import { rawLeadsToCsv } from "@/lib/csv";
 
 export async function GET(_req: Request, ctx: RouteContext<"/api/groups/[groupId]/export">) {
   const { groupId } = await ctx.params;
@@ -9,7 +9,10 @@ export async function GET(_req: Request, ctx: RouteContext<"/api/groups/[groupId
     where: { id: groupId },
     include: {
       batch: true,
-      members: { include: { lead: true }, orderBy: { revenue: "desc" } },
+      members: {
+        include: { lead: { include: { upload: { select: { columns: true } } } } },
+        orderBy: { revenue: "desc" },
+      },
     },
   });
 
@@ -17,14 +20,8 @@ export async function GET(_req: Request, ctx: RouteContext<"/api/groups/[groupId
     return NextResponse.json({ error: "Group not found" }, { status: 404 });
   }
 
-  const csv = leadsToCsv(
-    group.members.map((m) => ({
-      name: m.lead.name,
-      phone: m.lead.phone,
-      email: m.lead.email,
-      company: m.lead.company,
-      revenue: m.lead.revenue,
-    })),
+  const csv = rawLeadsToCsv(
+    group.members.map((m) => ({ ...m.lead, columnOrder: m.lead.upload?.columns })),
   );
 
   const groupLabel = group.name ?? `group-${group.groupNumber}`;

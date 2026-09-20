@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
     data: {
       filename: file.name || "upload.csv",
       rowCount: rows.length,
+      columns: Object.keys(rows[0].raw),
       leads: {
         create: rows.map((r) => ({
           name: r.name,
@@ -38,6 +39,7 @@ export async function POST(req: NextRequest) {
           email: r.email,
           company: r.company,
           revenue: r.revenue,
+          rawData: r.raw,
         })),
       },
     },

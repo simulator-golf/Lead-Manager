@@ -11,6 +11,9 @@ model Upload {
   id        String   @id @default(cuid())
   filename  String
   rowCount  Int
+  // Original CSV header order, so exports can rebuild the same column
+  // order as the source file (Postgres's Json storage doesn't preserve it).
+  columns   String[] @default([])
   createdAt DateTime @default(now())
 
   leads Lead[]
@@ -23,6 +26,10 @@ model Lead {
   email     String?
   company   String?
   revenue   Float    @default(0)
+  // The full original CSV row, keyed by its original column headers, so
+  // exports can look exactly like what was imported. Null for leads
+  // created before this field existed.
+  rawData   Json?
   createdAt DateTime @default(now())
 
   uploadId String?

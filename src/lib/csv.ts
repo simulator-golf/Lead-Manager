@@ -7,6 +7,9 @@ export interface ParsedLeadRow {
   email: string | null;
   company: string | null;
   revenue: number;
+  /** The original row exactly as it appeared in the uploaded file, keyed by
+   * its original column headers — used so exports can match the import. */
+  raw: Record<string, string>;
 }
 
 const NAME_KEYS = ["name", "full name", "fullname", "contact", "contact name", "lead name"];
@@ -52,6 +55,10 @@ function parseRevenue(raw: string | undefined): number {
   return Number.isFinite(value) ? value : 0;
 }
 
+function isRowBlank(raw: Record<string, string>): boolean {
+  return Object.values(raw).every((v) => !v || v.trim() === "");
+}
+
 export class CsvValidationError extends Error {}
 
 export function parseLeadsCsv(fileContents: string): ParsedLeadRow[] {
@@ -77,13 +84,6 @@ export function parseLeadsCsv(fileContents: string): ParsedLeadRow[] {
   const nameKey = findKey(firstRow, NAME_KEYS);
   const firstNameKey = findKey(firstRow, FIRST_NAME_KEYS);
   const lastNameKey = findKey(firstRow, LAST_NAME_KEYS);
-  if (!nameKey && !firstNameKey && !lastNameKey) {
-    throw new CsvValidationError(
-      `Could not find a "name" column (or "first name"/"last name" columns). Found columns: ${Object.keys(
-        firstRow,
-      ).join(", ")}`,
-    );
-  }
   const revenueKey = findKey(firstRow, REVENUE_KEYS);
   if (!revenueKey) {
     throw new CsvValidationError(
@@ -97,6 +97,7 @@ export function parseLeadsCsv(fileContents: string): ParsedLeadRow[] {
   const companyKey = findKey(firstRow, COMPANY_KEYS);
 
   return records
+    .filter((row) => !isRowBlank(row))
     .map((row) => {
       const phone = phoneKey ? (row[phoneKey] ?? "").trim() || null : null;
       const email = emailKey ? (row[emailKey] ?? "").trim().toLowerCase() || null : null;
@@ -107,9 +108,8 @@ export function parseLeadsCsv(fileContents: string): ParsedLeadRow[] {
         const last = lastNameKey ? (row[lastNameKey] ?? "").trim() : "";
         name = `${first} ${last}`.trim();
       }
-      // Some CRM exports leave the name blank for a handful of rows but still
-      // have a real contact on file — fall back rather than dropping the lead.
-      if (!name) name = email ?? phone ?? "";
+      // Keep every row that has real data, even with nothing to call it by.
+      if (!name) name = email ?? phone ?? "(no name)";
 
       return {
         name,
@@ -117,9 +117,9 @@ export function parseLeadsCsv(fileContents: string): ParsedLeadRow[] {
         email,
         company: companyKey ? (row[companyKey] ?? "").trim() || null : null,
         revenue: parseRevenue(row[revenueKey]),
+        raw: row,
       };
-    })
-    .filter((row) => row.name.length > 0);
+    });
 }
 
 export interface ParsedCallLogRow {
@@ -169,17 +169,74 @@ export function parseCallLogCsv(fileContents: string): ParsedCallLogRow[] {
     .filter((row) => row.phone || row.email);
 }
 
-export function leadsToCsv(
-  rows: { name: string; phone: string | null; email: string | null; company: string | null; revenue: number }[],
+export interface ExportableLead {
+  name: string;
+  phone: string | null;
+  email: string | null;
+  company: string | null;
+  revenue: number;
+  rawData: unknown;
+  /** Original CSV header order for this lead's upload, if known. Postgres's
+   * Json storage doesn't preserve key order, so this is how column order in
+   * exports is kept faithful to the source file. */
+  columnOrder?: string[] | null;
+}
+
+function leadRawRow(lead: ExportableLead): { raw: Record<string, string>; order: string[] } {
+  if (lead.rawData && typeof lead.rawData === "object" && !Array.isArray(lead.rawData)) {
+    const raw = lead.rawData as Record<string, string>;
+    const order = lead.columnOrder && lead.columnOrder.length > 0 ? lead.columnOrder : Object.keys(raw);
+    return { raw, order };
+  }
+  // Leads from before rawData existed: fall back to the normalized fields.
+  const raw = {
+    Name: lead.name,
+    Phone: lead.phone ?? "",
+    Email: lead.email ?? "",
+    Company: lead.company ?? "",
+    Revenue: String(lead.revenue),
+  };
+  return { raw, order: Object.keys(raw) };
+}
+
+/**
+ * Builds a CSV that mirrors the original uploaded file's columns and values
+ * as closely as possible, rather than the app's normalized fields. Leads
+ * from different uploads (or different original column sets) are merged by
+ * taking the union of every column seen, in first-seen order; a lead
+ * missing a given column just gets a blank cell for it.
+ *
+ * Pass `extraColumn` to prepend an extra column (e.g. which group a lead
+ * ended up in) with one value per lead, in the same order as `leads`.
+ */
+export function rawLeadsToCsv(
+  leads: ExportableLead[],
+  extraColumn?: { header: string; values: string[] },
 ): string {
-  return stringify(rows, {
+  const rows = leads.map(leadRawRow);
+
+  const headers: string[] = [];
+  const seen = new Set<string>();
+  for (const { order } of rows) {
+    for (const key of order) {
+      if (!seen.has(key)) {
+        seen.add(key);
+        headers.push(key);
+      }
+    }
+  }
+
+  const allHeaders = extraColumn ? [extraColumn.header, ...headers] : headers;
+
+  const filledRows = rows.map(({ raw }, i) => {
+    const row: Record<string, string> = {};
+    if (extraColumn) row[extraColumn.header] = extraColumn.values[i];
+    for (const h of headers) row[h] = raw[h] ?? "";
+    return row;
+  });
+
+  return stringify(filledRows, {
     header: true,
-    columns: [
-      { key: "name", header: "Name" },
-      { key: "phone", header: "Phone" },
-      { key: "email", header: "Email" },
-      { key: "company", header: "Company" },
-      { key: "revenue", header: "Revenue" },
-    ],
+    columns: allHeaders.map((h) => ({ key: h, header: h })),
   });
 }

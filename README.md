@@ -9,8 +9,10 @@ A cold-calling lead management tool:
   called for it yet (also in balanced groups of 50). Upload a CSV export of call
   outcomes from your dialer to mark leads as called for a promo (matched by phone or
   email), so the next generated list automatically excludes them.
-- **CSV downloads** — every group (and whole lists) can be downloaded as a CSV, ready to
-  import straight into Google Sheets.
+- **CSV downloads** — every group (and whole lists) can be downloaded as a CSV using the
+  exact same columns and values as the file you originally uploaded (plus a "Group"
+  column on the whole-list download). Every uploaded row is kept, even ones missing a
+  name, email, or phone.
 - **Rename lists and groups** — click a list's title or a group's name (on a list's page)
   to rename it inline.
 - **List requests** — a public, no-login page at `/request` where people can request a
@@ -50,13 +52,17 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## CSV formats
 
-**Lead upload** (`/upload`) needs a `name` column (or separate `first name` /
-`last name` columns — either works) and a revenue column (any of `revenue`, `spent`,
-`amount`, `total spent`, `lifetime spend`, `value`, `ltv`, ...). `phone`, `email`, and
-`company` columns are optional but recommended — `phone`/`email` are used to match call
-outcomes later, and also as a fallback name if a row has no name filled in at all.
-Column names are matched case-insensitively and don't need to be in any particular
-order; extra columns (like a CRM's internal ID) are ignored.
+**Lead upload** (`/upload`) needs a revenue column (any of `revenue`, `spent`, `amount`,
+`total spent`, `lifetime spend`, `value`, `ltv`, ...); a name column (or separate
+`first name`/`last name` columns), `phone`, `email`, and `company` are all optional but
+recommended — `phone`/`email` are used to match call outcomes later, and as a fallback
+label if a row has no name at all (falling back further to "(no name)" if there's
+nothing to identify the row by). Column names are matched case-insensitively and don't
+need to be in any particular order. Every row is kept, including ones with no name,
+email, or phone — the app never drops a row just because it can't identify who it is.
+
+Every other column in the file (a CRM's internal ID, visit dates, notes, whatever else
+is there) is preserved as-is and reappears on export — see "How exports work" below.
 
 **Call outcome upload** (on a promo's page) needs a `phone` and/or `email` column to
 match against existing leads (phone numbers are normalized to digits before matching, so
@@ -70,6 +76,16 @@ one at a time to whichever group currently has the lowest running total — skip
 group that has already reached its target size. Every group ends up at exactly 50
 members except the last, which gets whatever's left over (e.g. 130 leads → groups of 50,
 50, and 30), while keeping each group's total revenue close to the others.
+
+## How exports work
+
+Every lead's full original row (every column from the file it was uploaded in) is stored
+alongside the handful of normalized fields (name, phone, email, revenue) the app uses
+internally for grouping and matching. Group and list CSV downloads are built from that
+original data — same columns, same order, same values — rather than the app's normalized
+fields, so what you download looks like what you uploaded. Leads from before this
+existed, or without stored original data for some other reason, fall back to a plain
+Name/Phone/Email/Company/Revenue export instead.
 
 ## Google Sheets feed
 
