@@ -15,6 +15,9 @@ A cold-calling lead management tool:
   name, email, or phone.
 - **Rename lists and groups** — click a list's title or a group's name (on a list's page)
   to rename it inline.
+- **Uploads page** — see every CSV you've uploaded and how many leads came from it, and
+  delete one (with all its leads) before re-uploading a corrected version — otherwise
+  re-uploading the same file just adds a second copy of everyone.
 - **List requests** — a public, no-login page at `/request` where people can request a
   new list. You get an email notification each time (and a queue at `/requests` to track
   and mark them fulfilled).
