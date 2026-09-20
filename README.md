@@ -45,7 +45,8 @@ Open [http://localhost:3000](http://localhost:3000).
 
 | Variable | Required | Description |
 | --- | --- | --- |
-| `DATABASE_URL` | Yes | Postgres connection string, e.g. `postgresql://user:password@host:5432/dbname`. |
+| `DATABASE_URL` | Yes | Postgres connection string, e.g. `postgresql://user:password@host:5432/dbname`. On Neon this can be the pooled connection string. |
+| `DIRECT_URL` | Yes | Direct (non-pooled) connection string, used only when running migrations. On Neon, use the "Direct connection" string (no `-pooler` in the hostname) — a pooled connection isn't reliable for the advisory lock Prisma uses during migrations, and deploys can fail intermittently with a `P1002` timeout if it's missing. Same value as `DATABASE_URL` if you don't have a pooler in front of your database. |
 | `ADMIN_PASSWORD` | Yes | The one password used to log in. Change it from the default. |
 | `SESSION_SECRET` | Yes | Long random string used to sign the login session cookie. |
 | `RESEND_API_KEY` | No | API key from [resend.com](https://resend.com) for sending the "new list request" email. If unset, notifications are just logged to the server console instead of emailed — useful for local dev. |

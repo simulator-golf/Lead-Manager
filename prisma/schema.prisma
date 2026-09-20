@@ -3,8 +3,12 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Migrations need a direct (non-pooled) connection — Postgres advisory
+  // locks, which `prisma migrate deploy` uses to keep concurrent deploys
+  // from racing, aren't reliable through a connection pooler like Neon's.
+  directUrl = env("DIRECT_URL")
 }
 
 model Upload {
