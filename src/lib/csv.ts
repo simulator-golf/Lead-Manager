@@ -17,7 +17,7 @@ const FIRST_NAME_KEYS = ["first name", "firstname", "first"];
 const LAST_NAME_KEYS = ["last name", "lastname", "last", "surname"];
 const PHONE_KEYS = ["phone", "phone number", "cell", "mobile", "telephone"];
 const EMAIL_KEYS = ["email", "e-mail", "email address"];
-const COMPANY_KEYS = ["company", "business", "organization", "org"];
+const COMPANY_KEYS = ["company", "company name", "business", "organization", "org"];
 const REVENUE_KEYS = [
   "revenue",
   "spent",
