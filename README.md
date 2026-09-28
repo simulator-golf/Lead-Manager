@@ -24,8 +24,12 @@ A cold-calling lead management tool:
 - **Live Google Sheets feed** — a continuously-updating view of every lead's called
   status per promo, pullable straight into a Sheet with `IMPORTDATA` (no export clicks,
   no Google account setup). See "Google Sheets feed" below.
-- Everything except `/request`, `/login`, and `/api/export/*` requires the single admin
-  password.
+- **Damage check for inspectors** — a public, no-login page at `/damage-check` for
+  wood-destroying insect inspectors. People upload up to 4 photos and get a preliminary
+  read on whether it looks like termite, carpenter ant or water damage, plus a field ID
+  guide, homeowner questions, knockout factors and an FAQ. See "Damage check" below.
+- Everything except `/request`, `/damage-check`, `/login`, `/api/export/*` and
+  `/api/damage-check/*` requires the single admin password.
 
 ## Setup
 
@@ -52,6 +56,8 @@ Open [http://localhost:3000](http://localhost:3000).
 | `RESEND_API_KEY` | No | API key from [resend.com](https://resend.com) for sending the "new list request" email. If unset, notifications are just logged to the server console instead of emailed — useful for local dev. |
 | `NOTIFY_EMAIL` | Yes | Where list-request notifications are sent. |
 | `FROM_EMAIL` | No | The "from" address for notification emails. Must be a verified sender/domain in Resend, or use `onboarding@resend.dev` for testing. |
+| `ANTHROPIC_API_KEY` | Yes (if using the damage check) | API key from [console.anthropic.com](https://console.anthropic.com), used by `/damage-check` to analyze photos. Each photo check is billed to this key. Without it the page still loads, but the photo check reports that it isn't set up. |
+| `DAMAGE_CHECK_ACCESS_CODE` | No | If set, the photo check asks for this code before it runs, so only people you give the code to can spend your API credit. Leave unset to let anyone with the link use it. |
 | `EXPORT_TOKEN` | Yes (if using the Sheets feed) | Secret required as `?token=` on `/api/export/*` feeds, since Google Sheets can't send a login cookie. Anyone with this value and your app's URL can read the exported data — keep it private, don't share the full feed URL. |
 
 ## CSV formats
@@ -107,6 +113,20 @@ In a Google Sheet, put this in cell A1:
 Google refreshes `IMPORTDATA` automatically every so often (and whenever the sheet is
 opened) — it's not instant, but it keeps the Sheet current without anyone touching a
 CSV. Treat that formula as sensitive: whoever can see it can see the whole feed.
+
+## Damage check
+
+`/damage-check` is a single static page (`public/damage-check.html`, served at the clean
+URL by a rewrite in `next.config.ts`). Its photo check posts to
+`/api/damage-check/analyze`, which sends the photos to Claude and returns a structured
+result. Photos are shrunk in the browser to 1600px on the long side before upload, so
+large phone photos stay under the host's request size limit. Nothing is stored: photos
+and results aren't saved to the database.
+
+Because the page is public and each check costs API credit, the route caps each visitor
+at 10 checks per 10 minutes (best effort; on serverless hosts the count is per server
+instance) and can require `DAMAGE_CHECK_ACCESS_CODE`. Setting a monthly spend limit on
+the API key in the Anthropic Console is a good backstop.
 
 ## Deployment
 
